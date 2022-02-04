@@ -1,12 +1,15 @@
-/* This is a skeleton code for two-pass multi-way sorting, you can make modifications as long as you meet 
-   all question requirements*/  
+/* This is a skeleton code for two-pass multi-way sorting, you can make modifications as long as you meet
+   all question requirements*/
 //Currently this program will just load the records in the buffers (main memory) and print them when filled up.
-//And continue this process untill the full Emp.csv is read. 
+//And continue this process untill the full Emp.csv is read.
 
 #include <bits/stdc++.h>
+#include <string>
+#include <iostream>
+#include <fstream>
 using namespace std;
 
-//defines how many buffers are available in the Main Memory 
+//defines how many buffers are available in the Main Memory
 #define buffer_size 22
 
 struct EmpRecord {
@@ -43,7 +46,32 @@ EmpRecord Grab_Emp_Record(fstream &empin) {
     }
 }
 
-//Printing whatever is stored in the buffers of Main Memory 
+
+// swap emp
+void swap_emp(EmpRecord *emp, EmpRecord *emp2){
+
+    /*
+    //cout<< "copy " << endl;
+    emp.eid = emp2.eid;
+    //cout << "id" << emp.eid<< endl;
+    //emp.ename.copy(emp2.ename, emp2.ename.length(),0);
+    emp.ename = emp2.ename;
+    emp.age = emp2.age;
+    emp.salary = emp2.salary;
+    //cout << emp.eid << emp.ename << emp.age << emp.salary << endl;
+    */
+
+    EmpRecord temp = *emp;
+    *emp = *emp2;
+    *emp2 = temp;
+}
+
+// print single emp
+void print_emp(EmpRecord emp){
+    cout << emp.eid << " "<< emp.ename << " " << emp.age << " " << emp.salary << endl;
+}
+
+//Printing whatever is stored in the buffers of Main Memory
 //Can come in handy to see if you've sorted the records in your main memory properly.
 void Print_Buffers(int cur_size) {
     for (int i = 0; i < cur_size; i++)
@@ -52,29 +80,47 @@ void Print_Buffers(int cur_size) {
     }
 }
 
-//Sorting the buffers in main_memory based on 'eid' and storing the sorted records into a temporary file 
-//You can change return type and arguments as you want. 
-void Sort_in_Main_Memory(){
-    cout << "Sorting Not Implemented" << endl;
+//Sorting the buffers in main_memory based on 'eid' and storing the sorted records into a temporary file
+//You can change return type and arguments as you want.
+void Sort_in_Main_Memory(fstream &tempfile, int cur_size){
+    cout << endl << endl << "Sorting within buffer" << endl;
+    for(int i = 0; i < cur_size-1; i++){
+        //cout<< "i: " << i << " size: " << buffer_size << endl;
+
+        // sort buffers in ascending order
+        for(int j = 0; j < cur_size-i-1; j++){
+            if(buffers[j].eid > buffers[j+1].eid){
+                swap_emp(&buffers[j], &buffers[j+1]);
+            }
+        }
+    }
+
+    // output to temp file
+    for(int k = 0; k < cur_size ; k++){
+        tempfile << buffers[k].eid << "," << buffers[k].ename << ","<< buffers[k].age << ","<< buffers[k].salary << endl;
+    }
+    Print_Buffers(cur_size);
+
     return;
 }
 
-//You can use this function to merge your M-1 runs using the buffers in main memory and storing them in sorted file 'EmpSorted.csv'(Final Output File) 
-//You can change return type and arguments as you want. 
+//You can use this function to merge your M-1 runs using the buffers in main memory and storing them in sorted file 'EmpSorted.csv'(Final Output File)
+//You can change return type and arguments as you want.
 void Merge_Runs_in_Main_Memory(){
     cout << "Merging Not Implemented" << endl;
 }
 
 int main() {
   // open file streams to read and write
-  fstream input_file;
+  fstream input_file, temp_file, out_file;
   input_file.open("Emp.csv", ios::in);
- 
+  temp_file.open("temp.csv", ios::in | ios::out | ios::app);
+
   // flags check when relations are done being read
   bool flag = true;
   int cur_size = 0;
-  
-  /*First Pass: The following loop will read each block put it into main_memory 
+
+  /*First Pass: The following loop will read each block put it into main_memory
     and sort them then will put them into a temporary file for 2nd pass */
   while (flag) {
       // FOR BLOCK IN RELATION EMP
@@ -85,6 +131,7 @@ int main() {
       if (single_EmpRecord.eid == -1) {
           flag = false;
           Print_Buffers(cur_size); // The main_memory is not filled up but there are some leftover data that needs to be sorted.
+          Sort_in_Main_Memory(temp_file, cur_size);
       }
       if(cur_size + 1 <= buffer_size){
           //Memory is not full store current record into buffers.
@@ -96,20 +143,22 @@ int main() {
           cout << "Main Memory is full. Time to sort and store sorted blocks in a temporary file" << endl;
           Print_Buffers(buffer_size);
           //SortMain("Attributes You Want");
-          
+          Sort_in_Main_Memory(temp_file, buffer_size);
+
           //After sorting start again. Clearing memory and putting the current one into main memory.
           cur_size = 0;
           buffers[cur_size] = single_EmpRecord;
           cur_size += 1;
       }
-      
+
   }
   input_file.close();
-  
+  temp_file.close();
+
   /* Implement 2nd Pass: Read the temporary sorted files and utilize main_memory to store sorted runs into the EmpSorted.csv*/
 
   //Uncomment when you are ready to store the sorted relation
-  //fstream sorted_file;  
+  //fstream sorted_file;
   //sorted_file.open("EmpSorted.csv", ios::out | ios::app);
 
   //Pseudocode
@@ -118,7 +167,7 @@ int main() {
       Merge_Runs_in_Main_Memory();
       break;
   }
-  
+
   //You can delete the temporary sorted files (runs) after you're done if you want. It's okay if you don't.
 
   return 0;
