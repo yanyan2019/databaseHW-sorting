@@ -12,12 +12,14 @@ using namespace std;
 //defines how many buffers are available in the Main Memory
 #define buffer_size 22
 
+
 struct EmpRecord {
     int eid;
     string ename;
     int age;
     double salary;
 };
+
 EmpRecord buffers[buffer_size]; // this structure contains 22 buffers; available as your main memory.
 
 // Grab a single block from the Emp.csv file, in theory if a block was larger than
@@ -82,23 +84,44 @@ void Print_Buffers(int cur_size) {
 
 //Sorting the buffers in main_memory based on 'eid' and storing the sorted records into a temporary file
 //You can change return type and arguments as you want.
-void Sort_in_Main_Memory(fstream &tempfile, int cur_size){
+void Sort_in_Main_Memory(int cur_size, int &k){
     cout << endl << endl << "Sorting within buffer" << endl;
-    for(int i = 0; i < cur_size-1; i++){
-        //cout<< "i: " << i << " size: " << buffer_size << endl;
 
-        // sort buffers in ascending order
-        for(int j = 0; j < cur_size-i-1; j++){
-            if(buffers[j].eid > buffers[j+1].eid){
-                swap_emp(&buffers[j], &buffers[j+1]);
+
+    /*ostream file;
+    int k = 0;
+    while(k < buffer_size){
+        cout << k << endl;
+        file.clear();
+        file.open("temp" + to_string(k) + ".csv", fstream::trunc | fstream::out);
+    */
+
+        for(int i = 0; i < cur_size-1; i++){
+            //cout<< "i: " << i << " size: " << buffer_size << endl;
+
+            // sort buffers in ascending order
+            for(int j = 0; j < cur_size-i-1; j++){
+                if(buffers[j].eid > buffers[j+1].eid){
+                    swap_emp(&buffers[j], &buffers[j+1]);
+                }
             }
         }
-    }
+
 
     // output to temp file
-    for(int k = 0; k < cur_size ; k++){
-        tempfile << buffers[k].eid << "," << buffers[k].ename << ","<< buffers[k].age << ","<< buffers[k].salary << endl;
-    }
+    fstream file;
+    //if(k < buffer_size){
+
+        file.open("temp" + to_string(k) + ".csv", fstream::trunc | fstream::out | fstream::in);
+
+        for(int m = 0; m < cur_size; m++){
+            //cout << m << endl << endl;;
+            //rint_emp(buffers[m]);
+            file << buffers[m].eid << "," << buffers[m].ename << ","<< buffers[m].age << ","<< buffers[m].salary << endl;
+        }
+        file.close();
+        k++;
+    //}
     Print_Buffers(cur_size);
 
     return;
@@ -114,11 +137,14 @@ int main() {
   // open file streams to read and write
   fstream input_file, temp_file, out_file;
   input_file.open("Emp.csv", ios::in);
-  temp_file.open("temp.csv", ios::in | ios::out | ios::app);
+  //temp_file.open("temp.csv", ios::in | ios::out);
 
   // flags check when relations are done being read
   bool flag = true;
   int cur_size = 0;
+
+  // variables
+  int k = 0;
 
   /*First Pass: The following loop will read each block put it into main_memory
     and sort them then will put them into a temporary file for 2nd pass */
@@ -131,11 +157,11 @@ int main() {
       if (single_EmpRecord.eid == -1) {
           flag = false;
           Print_Buffers(cur_size); // The main_memory is not filled up but there are some leftover data that needs to be sorted.
-          Sort_in_Main_Memory(temp_file, cur_size);
+          Sort_in_Main_Memory(cur_size,k);
       }
       if(cur_size + 1 <= buffer_size){
           //Memory is not full store current record into buffers.
-          buffers[cur_size] = single_EmpRecord ;
+          buffers[cur_size] = single_EmpRecord;
           cur_size += 1;
       }
       else{
@@ -143,7 +169,7 @@ int main() {
           cout << "Main Memory is full. Time to sort and store sorted blocks in a temporary file" << endl;
           Print_Buffers(buffer_size);
           //SortMain("Attributes You Want");
-          Sort_in_Main_Memory(temp_file, buffer_size);
+          Sort_in_Main_Memory(buffer_size, k);
 
           //After sorting start again. Clearing memory and putting the current one into main memory.
           cur_size = 0;
@@ -153,7 +179,7 @@ int main() {
 
   }
   input_file.close();
-  temp_file.close();
+
 
   /* Implement 2nd Pass: Read the temporary sorted files and utilize main_memory to store sorted runs into the EmpSorted.csv*/
 
@@ -169,6 +195,11 @@ int main() {
   }
 
   //You can delete the temporary sorted files (runs) after you're done if you want. It's okay if you don't.
+  //for(){
+
+  //}
+
+  temp_file.close();
 
   return 0;
 }
