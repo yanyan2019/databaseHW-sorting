@@ -30,17 +30,13 @@ EmpRecord Grab_Emp_Record(fstream &empin, int pos) {
     string line, word;
     EmpRecord  emp;
 
-
     // set line position for getline to read, else start from beginning
     if(pos != -1){
         empin.seekg(pos);
-        //cout << "pos: " << empin.seekg(pos) << endl;
     }
 
     // grab entire line
-
     if (getline(empin, line, '\n')) {
-        //cout << "getline !" << endl;
         // turn line into a stream
         stringstream s(line);
         // gets everything in stream up to comma
@@ -59,14 +55,12 @@ EmpRecord Grab_Emp_Record(fstream &empin, int pos) {
     }
 }
 
-
-// swap emp
+// swap emp position
 void swap_emp(EmpRecord *emp, EmpRecord *emp2){
     EmpRecord temp = *emp;
     *emp = *emp2;
     *emp2 = temp;
 }
-
 
 // print single emp
 void print_emp(EmpRecord emp){
@@ -82,11 +76,11 @@ void Print_Buffers(int cur_size) {
     }
 }
 
-
-// find min item position
+// find position of minimum eid in buffers
 int find_min_pos(int cursize){
     int min = -1;
 
+    // find first available emp
     for(int j = 0; j < cursize; j++){
         if(buffers[j].eid != -1){
             min = j;
@@ -94,10 +88,12 @@ int find_min_pos(int cursize){
         }
     }
 
+    // none of the eid is available
     if(min == -1){
         return min;
     }
 
+    // find min position
     for(int i = 0; i < cursize; i++){
         if(buffers[i].eid > -1 && buffers[i].eid < buffers[min].eid){
             min = i;
@@ -111,12 +107,10 @@ int find_min_pos(int cursize){
 void Sort_in_Main_Memory(int cur_size, int &k, bool pass2){
 
     EmpRecord emp;
-    cout << endl << endl << "Sorting within buffer" << endl;
     for(int i = 0; i < cur_size-1; i++){
         // sort buffers in ascending order
         for(int j = 0; j < cur_size-i-1; j++){
-
-            // swap emp
+            // swap emp in ascending order
             if(buffers[j].eid > buffers[j+1].eid){
                     swap_emp(&buffers[j], &buffers[j+1]);
             }
@@ -125,7 +119,7 @@ void Sort_in_Main_Memory(int cur_size, int &k, bool pass2){
 
     // this part is for pass 1
     if(!pass2){
-        // output to temp file
+        // open temp files
         fstream file;
         file.open("temp" + to_string(k) + ".csv", fstream::trunc | fstream::out | fstream::in);
 
@@ -134,14 +128,11 @@ void Sort_in_Main_Memory(int cur_size, int &k, bool pass2){
             //cout << m << endl << endl;
             file << buffers[m].eid << "," << buffers[m].ename << ","<< buffers[m].age << ","<< buffers[m].salary << endl;
         }
-
         file.close();
 
         // number of temp files
         k++;
     }
-
-    Print_Buffers(cur_size);
     return;
 }
 
@@ -157,25 +148,29 @@ bool Merge_Runs_in_Main_Memory(fstream &sorted_file, int k, int *pos_array, int 
     // fill up buffers if sorted file is empty
     if(sorted_file.peek() == EOF){
         for(int i = 0;i < k; i++){
+
+            // open temp files
             string file_name = "temp" + to_string(i) + ".csv";
             strcpy(name, file_name.c_str());
             tempfile.open(name, fstream::in);
 
+            // load single emp
             EmpRecord emp = Grab_Emp_Record(tempfile, pos_array[i]);
             pos_array[i] = tempfile.tellg();
             tempfile.close();
 
+            // load emp into buffers
             buffers[cursize] = emp;
             cursize++;
         }
     }
 
-    // while temp files are available
+    // while not all temp files ended
     while(m < k){
         // find position of minimum eid in buffers
         pos = find_min_pos(cursize);
         if(pos == -1){
-            cout << "pos is -1 " << endl;
+            cout << "All files ended." << endl;
             return true;
         }
 
@@ -193,12 +188,14 @@ bool Merge_Runs_in_Main_Memory(fstream &sorted_file, int k, int *pos_array, int 
 
         EmpRecord emp = Grab_Emp_Record(tempfile, pos_array[last_output]);
 
+        // save the next read position
         pos_array[last_output] = tempfile.tellg();
         tempfile.close();
 
+        // load into buffers
         buffers[last_output] = emp;
 
-        // check end of files
+        // check the end of current file
         if(pos_array[last_output] == -1){
             cout << "file "<< last_output  <<  " ended" << endl;
             m++;
@@ -257,23 +254,21 @@ int main() {
 
   /* Implement 2nd Pass: Read the temporary sorted files and utilize main_memory to store sorted runs into the EmpSorted.csv*/
 
-  //Uncomment when you are ready to store the sorted relation
+  // open new sorted file
   fstream sorted_file;
   sorted_file.open("EmpSorted.csv", ios::out | ios::app);
 
-  //Pseudocode
+  // set variables
   bool flag_sorting_done = false;
   int m = 0, b_size = 0, last_output = 0;
   int pos_array[k];
   memset(pos_array, 0, k*sizeof(int));
 
-  // keep looping until all sorted
+  // keep merging until all sorted emp output to file
   while(!flag_sorting_done){
       flag_sorting_done = Merge_Runs_in_Main_Memory(sorted_file, k, pos_array, m, b_size, last_output);
   }
 
   //You can delete the temporary sorted files (runs) after you're done if you want. It's okay if you don't.
-
-
   return 0;
 }
